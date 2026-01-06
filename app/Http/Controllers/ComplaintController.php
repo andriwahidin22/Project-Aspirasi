@@ -45,9 +45,14 @@ class ComplaintController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:120'],
-            'description' => ['required', 'string'],
+            'description' => ['required', 'string', function ($attribute, $value, $fail) {
+                $wordCount = count(array_filter(preg_split('/\s+/', trim($value))));
+                if ($wordCount > 300) {
+                    $fail('Deskripsi maksimal 300 kata. Saat ini: ' . $wordCount . ' kata');
+                }
+            }],
             'category' => ['required', 'in:bullying,lgbt,kekerasan_seksual,cat_calling,akademik,fasilitas,lainnya'],
-            'evidence' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,pdf'],
+            'evidence' => ['nullable', 'file', 'max:51200', 'mimes:jpg,jpeg,png,pdf,mp4,webm,mp3,wav,ogg,doc,docx'],
         ]);
 
         $evidencePath = null;
@@ -76,7 +81,7 @@ class ComplaintController extends Controller
         if ($complaint->user_id !== Auth::id()) {
             abort(403);
         }
-        
+
         return view('mahasiswa.complaints.show', compact('complaint'));
     }
 
@@ -86,7 +91,7 @@ class ComplaintController extends Controller
         if ($complaint->user_id !== Auth::id() || $complaint->status !== 'pending') {
             abort(403);
         }
-        
+
         return view('mahasiswa.complaints.edit', compact('complaint'));
     }
 
@@ -99,9 +104,14 @@ class ComplaintController extends Controller
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:120'],
-            'description' => ['required', 'string'],
+            'description' => ['required', 'string', function ($attribute, $value, $fail) {
+                $wordCount = count(array_filter(preg_split('/\s+/', trim($value))));
+                if ($wordCount > 300) {
+                    $fail('Deskripsi maksimal 300 kata. Saat ini: ' . $wordCount . ' kata');
+                }
+            }],
             'category' => ['required', 'in:bullying,lgbt,kekerasan_seksual,cat_calling,akademik,fasilitas,lainnya'],
-            'evidence' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,pdf'],
+            'evidence' => ['nullable', 'file', 'max:51200', 'mimes:jpg,jpeg,png,pdf,mp4,webm,mp3,wav,ogg,doc,docx'],
         ]);
 
         $evidencePath = $complaint->evidence_path;
@@ -225,23 +235,23 @@ class ComplaintController extends Controller
     public function exportPDF(Request $request)
     {
         $query = Complaint::query()->with('user');
-        
+
         // Filter by status
         if ($request->has('status') && $request->status) {
             $query->where('status', $request->status);
         }
-        
+
         // Filter by date range
         if ($request->has('start_date') && $request->start_date) {
             $query->whereDate('created_at', '>=', $request->start_date);
         }
-        
+
         if ($request->has('end_date') && $request->end_date) {
             $query->whereDate('created_at', '<=', $request->end_date);
         }
-        
+
         $complaints = $query->orderBy('created_at', 'desc')->get();
-        
+
         // Load PDF view
         $pdf = Pdf::loadView('admin.complaints.export.pdf', [
             'complaints' => $complaints,
@@ -249,17 +259,17 @@ class ComplaintController extends Controller
             'startDate' => $request->start_date,
             'endDate' => $request->end_date,
         ]);
-        
+
         // Set paper size and orientation
         $pdf->setPaper('A4', 'portrait');
-        
+
         // Generate filename
         $filename = 'laporan-pengaduan-' . date('Y-m-d') . '.pdf';
-        
+
         if ($request->status) {
             $filename = 'laporan-pengaduan-' . $request->status . '-' . date('Y-m-d') . '.pdf';
         }
-        
+
         // Download PDF
         return $pdf->download($filename);
     }
@@ -270,11 +280,11 @@ class ComplaintController extends Controller
         $pdf = Pdf::loadView('admin.complaints.export.single', [
             'complaint' => $complaint->load('user'),
         ]);
-        
+
         $pdf->setPaper('A4', 'portrait');
-        
+
         $filename = 'pengaduan-' . $complaint->id . '-' . date('Y-m-d') . '.pdf';
-        
+
         return $pdf->download($filename);
     }
 }
