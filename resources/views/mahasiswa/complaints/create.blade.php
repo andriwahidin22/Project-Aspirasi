@@ -92,11 +92,16 @@
                 <div>
                     <label class="text-sm font-medium text-blue-100 mb-2">Deskripsi / Kronologi Lengkap</label>
                     <textarea name="description"
+                              id="description"
                               rows="7"
                               placeholder="Jelaskan kronologi kejadian secara detail (waktu, tempat, pihak terkait, dll)"
                               class="mt-2 w-full rounded-xl border border-blue-400/30 bg-blue-900/30 px-4 py-3 text-white placeholder-blue-300/50 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                              oninput="updateWordCount(this)"
                               required>{{ old('description') }}</textarea>
-                    <div class="mt-2 text-xs text-blue-300/70">Detailkan informasi untuk membantu proses penyelesaian</div>
+                    <div class="mt-2 flex justify-between text-xs">
+                        <span class="text-blue-300/70">Detailkan informasi untuk membantu proses penyelesaian</span>
+                        <span id="wordCount" class="text-blue-300/70">0/300 kata</span>
+                    </div>
                 </div>
 
                 <!-- BUKTI -->
@@ -105,13 +110,43 @@
                     <div class="mt-2">
                         <input name="evidence"
                                type="file"
-                               accept=".jpg,.jpeg,.png,.pdf"
+                               accept=".jpg,.jpeg,.png,.pdf,.mp4,.webm,.mp3,.wav,.ogg,.doc,.docx"
                                class="w-full rounded-xl border border-blue-400/30 bg-blue-900/30 p-4 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-blue-600 file:px-4 file:py-3 file:text-sm file:font-semibold file:text-white hover:file:bg-blue-500">
                     </div>
                     <div class="mt-2 text-xs text-blue-300/70">
-                        Format: JPG, PNG, PDF. Maksimal: 10MB (direkomendasikan untuk memperkuat laporan)
+                        Format: JPG, PNG, PDF, MP4, WEBM, MP3, WAV, OGG, DOC, DOCX. Maksimal: 50MB
                     </div>
                 </div>
+
+                @push('scripts')
+                <script>
+                function countWords(str) {
+                    str = str.trim();
+                    if (str === '') return 0;
+                    return str.split(/\s+/).filter(word => word.length > 0).length;
+                }
+
+                function updateWordCount(textarea) {
+                    const words = countWords(textarea.value);
+                    const counter = document.getElementById('wordCount');
+                    counter.textContent = words + '/300 kata';
+                    
+                    if (words > 300) {
+                        counter.classList.add('text-red-400');
+                        counter.classList.remove('text-blue-300/70');
+                    } else {
+                        counter.classList.remove('text-red-400');
+                        counter.classList.add('text-blue-300/70');
+                    }
+                }
+
+                // Initialize on page load
+                document.addEventListener('DOMContentLoaded', function() {
+                    const desc = document.getElementById('description');
+                    if (desc) updateWordCount(desc);
+                });
+                </script>
+                @endpush
 
                 <div class="flex flex-wrap gap-3 pt-4">
                     <button type="submit"
